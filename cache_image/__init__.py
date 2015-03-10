@@ -1,8 +1,6 @@
 
-convert_image_api = 'http://gothic-province-823.appspot.com/api/covert_gs_key'
-cache_image_api = 'http://gothic-province-823.appspot.com/api/cache_image_v2'
 
-def _create_cache_image_content(image_url, content):
+def _create_cache_image_content(cache_image_api, image_url, content):
     ext = imghdr.what('temp', content)
     temp = cStringIO.StringIO(content)
     temp.seek(0)
@@ -13,7 +11,7 @@ def _create_cache_image_content(image_url, content):
     out.seek(0)
 
     data = requests.post(cache_image_api,
-        {'url': image_url},
+        { 'url': image_url },
         files = {
             'file': content
         }
@@ -21,7 +19,7 @@ def _create_cache_image_content(image_url, content):
     return data
 
 
-def create_cache_image(convert_image_api, cache_image_api,image_url):
+def create_cache_image(cache_image_api, image_url):
     data = {'url': image_url}
     url = cache_image_api + "?" + urllib.urlencode(data)
     data = requests.get(url).json()
@@ -35,7 +33,7 @@ def create_cache_image(convert_image_api, cache_image_api,image_url):
 
         content = requests.get(image_url).content
 
-        data = _create_cache_image_content(image_url, content)
+        data = _create_cache_image_content(cache_image_api, image_url, content)
 
     assert 'url' in data, data
     return data['url']
