@@ -7,8 +7,8 @@ import StringIO
 def find_window(pix, w, h):
     x1 = w - 1
     y1 = h - 1
-    x2 = 0 
-    y2 = 0 
+    x2 = 0
+    y2 = 0
     for y in range(h):
         for x in range(w):
             if pix[x, y] > 0:
@@ -40,7 +40,13 @@ def find_boundary(image, mode):
     (w, h) = image.size
     pix = image.load()
     window = find_window(pix, w, h)
-    (x1, y1, x2, y2) = window 
+
+    (x1, y1, x2, y2) = window
+    for y in range(y1, y2):
+        if blank_row(pix, w, h, y, x2 - x1):
+            y1 = y
+        else:
+            break
 
     if mode == "landscape" or mode == "both":
         for y in range(y1, y2):
@@ -71,7 +77,7 @@ def find_boundary(image, mode):
                 break
     else:
         x1 = 0
-        x2 = w - 1 
+        x2 = w - 1
     if x1 >= x2 or y1 >= y2:
         return window
     return (x1, y1, x2 + 1, y2 + 1)
@@ -137,7 +143,7 @@ def crop_image_obj(filename, mode="both"):
     (x1, y1, x2, y2) = find_boundary(edges, mode)
     (w, h) = image.size
     (x1, y1, x2, y2) = fit_size(
-        w, h, 
+        w, h,
         x1 * w / scale, y1 * h / scale,
         x2 * w / scale, y2 * h / scale)
     output = StringIO.StringIO()
@@ -146,10 +152,10 @@ def crop_image_obj(filename, mode="both"):
     output.flush()
     return output.getvalue()
 
-if __name__ == "__main__":
-    if len(sys.argv) >= 3:
-        print crop_image_obj(sys.argv[1], sys.argv[2])
-    else:
-        print crop_image_obj("http://www.life8-photo.com/shoes/04401/brd400-5.jpg")
-    
+def preview(filename):
+    for mode in ("both", "portrait", "landscape"):
+        with open('temp.%s.jpg'%mode, 'wb') as ofile:
+            ofile.write(crop_image_obj(filename, mode))
 
+if __name__ == "__main__":
+    import clime.now
