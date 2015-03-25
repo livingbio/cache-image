@@ -1,6 +1,13 @@
+import imghdr
+from PIL import Image
+import cStringIO
+import requests
+from .crop_image_obj import crop_image_obj
+import urllib
+import logging
 
-
-def _create_cache_image_content(cache_image_api, image_url, content):
+def _create_cache_image_content(cache_image_api, image_url, content, mode):
+    # detect the file type
     ext = imghdr.what('temp', content)
     temp = cStringIO.StringIO(content)
     temp.seek(0)
@@ -9,31 +16,39 @@ def _create_cache_image_content(cache_image_api, image_url, content):
     out = cStringIO.StringIO()
     im.save(out, format='png')
     out.seek(0)
-
-    data = requests.post(cache_image_api,
+ 
+    if mode:
+        out = cStringIO.StringIO(crop_image_obj(out, mode))
+    
+    data = requests.post(
+        cache_image_api,
         { 'url': image_url },
         files = {
-            'file': content
+            'file': out
         }
     ).json()
     return data
 
 
-def create_cache_image(cache_image_api, image_url):
+def create_cache_image(cache_image_api, image_url, mode = None):
     data = {'url': image_url}
-    url = cache_image_api + "?" + urllib.urlencode(data)
-    data = requests.get(url).json()
 
-    if 'error' in data:
+    resp = None
+    if not mode:
+        # try cache directly
+        url = cache_image_api + "?" + urllib.urlencode(data)
+        resp = requests.get(url).json()
+
+    if not resp or 'error' in resp:
         # if cache image failed, try to download image from client side
         # it can solve some error that server cannot download / transform
         # image cause by appengine itself
 
-        logging.error(str(data))
+        logging.error(str(resp))
 
         content = requests.get(image_url).content
 
-        data = _create_cache_image_content(cache_image_api, image_url, content)
+        resp = _create_cache_image_content(cache_image_api, image_url, content, mode)
 
-    assert 'url' in data, data
-    return data['url']
+    assert 'url' in resp, resp
+    return resp['url']
