@@ -16,7 +16,10 @@ def _create_cache_image_content(cache_image_api, image_url, content, mode):
     out = cStringIO.StringIO()
     im.save(out, format='png')
     out.seek(0)
-
+ 
+    if mode:
+        out = cStringIO.StringIO(crop_image_obj(out, mode))
+    
     data = requests.post(
         cache_image_api,
         { 'url': image_url },

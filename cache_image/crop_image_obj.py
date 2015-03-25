@@ -130,7 +130,10 @@ def fit_size(w, h, x1, y1, x2, y2):
 #   mode = portrait:    Remove left and right blanks.
 #   mode = landscape:   Remove top and bottom blanks.
 def crop_image_obj(filename, mode="both"):
-    if filename[0:4] == 'http':
+    if hasattr(filename, 'read'):
+        # check if it is a buffer like object
+        image = Image.open(filename)        
+    elif filename[0:4] == 'http':
         fd = urllib2.urlopen(filename)
         image = Image.open(io.BytesIO(fd.read()))
     else:
