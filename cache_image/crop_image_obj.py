@@ -27,14 +27,54 @@ def find_window(pix, w, h):
     return (x1, y1, x2 + 1, y2 + 1)
 
 def blank_row(pix, w, h, y, window_w):
-    if sum([pix[x, y] / 255 for x in range(w)]) * 4 >= window_w:
+    if sum([pix[x, y] / 255 for x in range(w)]) * 6 >= window_w:
         return False
     return True
 
 def blank_col(pix, w, h, x, window_h):
-    if sum([pix[x, y] / 255 for y in range(h)]) * 3 >= window_h:
+    if sum([pix[x, y] / 255 for y in range(h)]) * 6 >= window_h:
         return False
     return True
+
+def landscape_stretch(image):
+    return image
+
+def portrait_stretch(image):
+    margin_rate = 10
+    sys.stderr.write("Portrair Stretch\n")
+    (w, h) = image.size
+    new_w = h
+    new_h = h
+    sys.stderr.write("From (%d,%d) to (%d,%d)\n" % (w, h, new_w, new_h))
+
+    margin = w / margin_rate
+    new_margin = (new_w - w) / 2 + margin 
+
+    left = image.crop((0, 0, margin, h))
+    right = image.crop((w - margin, 0, w, h))
+    center = image.crop((margin, 0, w - margin, h))
+    (cw, ch) = center.size
+    sys.stderr.write("Center from (%d,%d) to (%d,%d)\n" % (cw, ch, (new_w - 2 * new_margin), h))
+
+    left = left.resize((new_margin, h), Image.ANTIALIAS)
+    right = right.resize((new_margin + 1, h), Image.ANTIALIAS)
+
+    img_out = Image.new(image.mode, (new_w, new_h))
+    img_out.paste(left, (0, 0, new_margin, h))
+    img_out.paste(center, (new_margin, 0, new_margin + cw, h))
+    img_out.paste(right, (new_w - new_margin - 1, 0, new_w, h))
+
+    (w, h) = img_out.size
+    sys.stderr.write("New (%d,%d)\n" % (w, h))
+    return img_out
+
+def image_stretch(image):
+    (w, h) = image.size
+    if w > h:
+        return landscape_stretch(image)
+    elif w < h:
+        return portrait_stretch(image)
+    return image
 
 def find_boundary(image, mode):
     (w, h) = image.size
@@ -115,6 +155,7 @@ def fit_size(w, h, x1, y1, x2, y2):
     y1 = max(y1, 0)
     x2 = min(x2, w)
     y2 = min(y2, h)
+    return (x1, y1, x2, y2)
     #   Fit to a square.
     new_w = x2 - x1
     new_h = y2 - y1
@@ -138,19 +179,27 @@ def crop_image_obj(filename, mode="both"):
         image = Image.open(io.BytesIO(fd.read()))
     else:
         image = Image.open(filename)
-    scale = 10
+    scale = 16
     edges = image.filter(ImageFilter.FIND_EDGES).resize((scale, scale), Image.ANTIALIAS)
     enh = ImageEnhance.Contrast(edges)
     edges = enh.enhance(1000)
     edges = edges.convert("1")
     (x1, y1, x2, y2) = find_boundary(edges, mode)
+    sys.stderr.write("%d %d %d %d - " % (x1, y1, x2, y2))
     (w, h) = image.size
     (x1, y1, x2, y2) = fit_size(
         w, h,
         x1 * w / scale, y1 * h / scale,
         x2 * w / scale, y2 * h / scale)
+
+    sys.stderr.write("%d %d %d %d\n" % (x1, y1, x2, y2))
     output = StringIO.StringIO()
     out_img = image.crop((x1, y1, x2, y2))
+    out_img = image_stretch(out_img)
+
+    enh = ImageEnhance.Contrast(out_img)
+    out_img = enh.enhance(1.2)
+ 
     out_img.save(output, format="JPEG")
     output.flush()
     return output.getvalue()
