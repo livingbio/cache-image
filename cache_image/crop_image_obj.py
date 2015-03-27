@@ -164,7 +164,7 @@ def fit_size(w, h, x1, y1, x2, y2):
 #   mode = both:        Remove top, bottom, left, right blanks.
 #   mode = portrait:    Remove left and right blanks.
 #   mode = landscape:   Remove top and bottom blanks.
-def crop_image_obj(filename, mode="both"):
+def crop_image_obj(filename, mode="landscape", contrast=1.0):
     if filename[0:4] == 'http':
         fd = urllib2.urlopen(filename)
         image = Image.open(io.BytesIO(fd.read()))
@@ -189,7 +189,7 @@ def crop_image_obj(filename, mode="both"):
     out_img = image_stretch(out_img)
 
     enh = ImageEnhance.Contrast(out_img)
-    out_img = enh.enhance(1.2)
+    out_img = enh.enhance(contrast)
  
     out_img.save(output, format="JPEG")
     output.flush()
@@ -197,7 +197,7 @@ def crop_image_obj(filename, mode="both"):
 
 if __name__ == "__main__":
     if len(sys.argv) >= 3:
-        print crop_image_obj(sys.argv[1], sys.argv[2])
+        print crop_image_obj(sys.argv[1], sys.argv[2], 1.2)
     else:
         print crop_image_obj("http://www.life8-photo.com/shoes/04401/brd400-5.jpg")
     
