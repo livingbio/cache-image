@@ -48,7 +48,7 @@ def portrait_stretch(image):
     sys.stderr.write("From (%d,%d) to (%d,%d)\n" % (w, h, new_w, new_h))
 
     margin = w / margin_rate
-    new_margin = (new_w - w) / 2 + margin 
+    new_margin = (new_w - w) / 2 + margin
 
     left = image.crop((0, 0, margin, h))
     right = image.crop((w - margin, 0, w, h))
@@ -170,10 +170,10 @@ def fit_size(w, h, x1, y1, x2, y2):
 #   mode = both:        Remove top, bottom, left, right blanks.
 #   mode = portrait:    Remove left and right blanks.
 #   mode = landscape:   Remove top and bottom blanks.
-def crop_image_obj(filename, mode="both"):
+def crop_image_obj(filename, mode="landscape", contrast=1.0):
     if hasattr(filename, 'read'):
         # check if it is a buffer like object
-        image = Image.open(filename)        
+        image = Image.open(filename)
     elif filename[0:4] == 'http':
         fd = urllib2.urlopen(filename)
         image = Image.open(io.BytesIO(fd.read()))
@@ -198,8 +198,8 @@ def crop_image_obj(filename, mode="both"):
     out_img = image_stretch(out_img)
 
     enh = ImageEnhance.Contrast(out_img)
-    out_img = enh.enhance(1.2)
- 
+    out_img = enh.enhance(contrast)
+
     out_img.save(output, format="JPEG")
     output.flush()
     return output.getvalue()
