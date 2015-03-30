@@ -7,8 +7,8 @@ import StringIO
 def find_window(pix, w, h):
     x1 = w - 1
     y1 = h - 1
-    x2 = 0 
-    y2 = 0 
+    x2 = 0
+    y2 = 0
     for y in range(h):
         for x in range(w):
             if pix[x, y] > 0:
@@ -48,7 +48,7 @@ def portrait_stretch(image):
     sys.stderr.write("From (%d,%d) to (%d,%d)\n" % (w, h, new_w, new_h))
 
     margin = w / margin_rate
-    new_margin = (new_w - w) / 2 + margin 
+    new_margin = (new_w - w) / 2 + margin
 
     left = image.crop((0, 0, margin, h))
     right = image.crop((w - margin, 0, w, h))
@@ -80,7 +80,13 @@ def find_boundary(image, mode):
     (w, h) = image.size
     pix = image.load()
     window = find_window(pix, w, h)
-    (x1, y1, x2, y2) = window 
+
+    (x1, y1, x2, y2) = window
+    for y in range(y1, y2):
+        if blank_row(pix, w, h, y, x2 - x1):
+            y1 = y
+        else:
+            break
 
     if mode == "landscape" or mode == "both":
         for y in range(y1, y2):
@@ -111,7 +117,7 @@ def find_boundary(image, mode):
                 break
     else:
         x1 = 0
-        x2 = w - 1 
+        x2 = w - 1
     if x1 >= x2 or y1 >= y2:
         return window
     return (x1, y1, x2 + 1, y2 + 1)
@@ -165,7 +171,10 @@ def fit_size(w, h, x1, y1, x2, y2):
 #   mode = portrait:    Remove left and right blanks.
 #   mode = landscape:   Remove top and bottom blanks.
 def crop_image_obj(filename, mode="landscape", contrast=1.0):
-    if filename[0:4] == 'http':
+    if hasattr(filename, 'read'):
+        # check if it is a buffer like object
+        image = Image.open(filename)
+    elif filename[0:4] == 'http':
         fd = urllib2.urlopen(filename)
         image = Image.open(io.BytesIO(fd.read()))
     else:
@@ -179,7 +188,7 @@ def crop_image_obj(filename, mode="landscape", contrast=1.0):
     sys.stderr.write("%d %d %d %d - " % (x1, y1, x2, y2))
     (w, h) = image.size
     (x1, y1, x2, y2) = fit_size(
-        w, h, 
+        w, h,
         x1 * w / scale, y1 * h / scale,
         x2 * w / scale, y2 * h / scale)
 
@@ -190,15 +199,15 @@ def crop_image_obj(filename, mode="landscape", contrast=1.0):
 
     enh = ImageEnhance.Contrast(out_img)
     out_img = enh.enhance(contrast)
- 
+
     out_img.save(output, format="JPEG")
     output.flush()
     return output.getvalue()
 
-if __name__ == "__main__":
-    if len(sys.argv) >= 3:
-        print crop_image_obj(sys.argv[1], sys.argv[2], 1.2)
-    else:
-        print crop_image_obj("http://www.life8-photo.com/shoes/04401/brd400-5.jpg")
-    
+def preview(filename):
+    for mode in ("both", "portrait", "landscape"):
+        with open('temp.%s.jpg'%mode, 'wb') as ofile:
+            ofile.write(crop_image_obj(filename, mode))
 
+if __name__ == "__main__":
+    import clime.now
