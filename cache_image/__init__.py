@@ -1,11 +1,11 @@
 import imghdr
 from PIL import Image, ImageEnhance
 import cStringIO
-import requests
 from .crop_image_obj import crop_image_obj
-import urllib
+import urllib, urllib2
 import logging
-
+import requests
+import io
 
 class CacheImageAPI(object):
     def __init__(self, cache_image_api):
@@ -32,7 +32,7 @@ class CacheImageAPI(object):
 
     def contrast(self, content, contrast):
         output = cStringIO.StringIO()
-        out_image = Image.open(content)
+        out_img = Image.open(content)
         enh = ImageEnhance.Contrast(out_img)
         out_img = enh.enhance(contrast)
         out_img.save(output, format="JPEG")
@@ -49,7 +49,7 @@ class CacheImageAPI(object):
 
     def cache(self, image_url, content=None, mode=None, contrast=1.0):
         if not content:
-            content = cStringIO.StringIO(requests.get(image_url).content)
+            content = io.BytesIO(urllib2.urlopen(image_url).read())
             content = self.convert(content, 'png')
 
         if mode:
@@ -59,5 +59,4 @@ class CacheImageAPI(object):
             content = self.contrast(content, contrast)
 
         return self._cache_image(image_url, content)
-
 
