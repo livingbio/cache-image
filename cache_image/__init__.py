@@ -30,6 +30,16 @@ class CacheImageAPI(object):
     def crop(self, content, mode):
         return crop_image_obj(content, mode)
 
+    def contrast(self, content, contrast):
+        output = cStringIO.StringIO()
+        out_image = Image.open(content)
+        enh = ImageEnhance.Contrast(out_img)
+        out_img = enh.enhance(contrast)
+        out_img.save(output, format="JPEG")
+        output.flush()
+        output.seek(0)
+        return output
+
     def convert(self, content, format):
         im = Image.open(content)
         out = cStringIO.StringIO()
@@ -37,13 +47,16 @@ class CacheImageAPI(object):
         out.seek(0)
         return out
 
-    def cache(self, image_url, content=None, mode=None):
+    def cache(self, image_url, content=None, mode=None, contrast=1.0):
         if not content:
             content = cStringIO.StringIO(requests.get(image_url).content)
             content = self.convert(content, 'png')
 
         if mode:
             content = self.crop(content, mode)
+
+        if contrast != 1.0:
+            content = self.contrast(content, contrast)
 
         return self._cache_image(image_url, content)
 
