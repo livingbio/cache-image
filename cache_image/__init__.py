@@ -1,5 +1,5 @@
 import imghdr
-from PIL import Image
+from PIL import Image, ImageEnhance
 import cStringIO
 import requests
 from .crop_image_obj import crop_image_obj
