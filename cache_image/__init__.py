@@ -6,49 +6,45 @@ from .crop_image_obj import crop_image_obj
 import urllib
 import logging
 
-def _create_cache_image_content(cache_image_api, image_url, content, mode):
-    # detect the file type
-    ext = imghdr.what('temp', content)
-    temp = cStringIO.StringIO(content)
-    temp.seek(0)
-    im = Image.open(temp)
 
-    out = cStringIO.StringIO()
-    im.save(out, format='png')
-    out.seek(0)
- 
-    if mode:
-        out = cStringIO.StringIO(crop_image_obj(out, mode))
-    
-    data = requests.post(
-        cache_image_api,
-        { 'url': image_url },
-        files = {
-            'file': out
-        }
-    ).json()
-    return data
+class CacheImageAPI(object):
+    def __init__(self, cache_image_api):
+        self.cache_image_api = cache_image_api
+
+    def _cache_image(self, image_url, a_file=None):
+        data = { 'url': image_url }
+        if a_file:
+            resp = requests.post(
+                self.cache_image_api,
+                data,
+                files = {
+                    'file': a_file
+                }
+            ).json()
+        else:
+            url = self.cache_image_api + "?" + urllib.urlencode(data)
+            resp = requests.get(url).json()
+
+        return resp['url']
+
+    def crop(self, content, mode):
+        return crop_image_obj(content, mode)
+
+    def convert(self, content, format):
+        im = Image.open(content)
+        out = cStringIO.StringIO()
+        im.save(out, format=format)
+        out.seek(0)
+        return out
+
+    def cache(self, image_url, content=None, mode=None):
+        if not content:
+            content = cStringIO.StringIO(requests.get(image_url).content)
+            content = self.convert(content, 'png')
+
+        if mode:
+            content = self.crop(content, mode)
+
+        return self._cache_image(image_url, content)
 
 
-def create_cache_image(cache_image_api, image_url, mode = None):
-    data = {'url': image_url}
-
-    resp = None
-    if not mode:
-        # try cache directly
-        url = cache_image_api + "?" + urllib.urlencode(data)
-        resp = requests.get(url).json()
-
-    if not resp or 'error' in resp:
-        # if cache image failed, try to download image from client side
-        # it can solve some error that server cannot download / transform
-        # image cause by appengine itself
-
-        logging.error(str(resp))
-
-        content = requests.get(image_url).content
-
-        resp = _create_cache_image_content(cache_image_api, image_url, content, mode)
-
-    assert 'url' in resp, resp
-    return resp['url']

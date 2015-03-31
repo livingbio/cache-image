@@ -202,7 +202,8 @@ def crop_image_obj(filename, mode="landscape", contrast=1.0):
 
     out_img.save(output, format="JPEG")
     output.flush()
-    return output.getvalue()
+    output.seek(0)
+    return output
 
 def preview(filename):
     for mode in ("both", "portrait", "landscape"):
