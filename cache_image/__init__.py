@@ -47,9 +47,9 @@ class CacheImageAPI(object):
         out.seek(0)
         return out
 
-    def cache(self, image_url, content=None, mode=None, contrast=1.0):
+    def cache(self, image_url, content=None, mode=None, contrast=1.0, headers={'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/38.0.2125.111 Safari/537.36'}):
         if not content:
-            content = io.BytesIO(urllib2.urlopen(image_url).read())
+            content = io.BytesIO(requests.get(image_url, headers=headers).content)
             content = self.convert(content, 'png')
 
         if mode:
